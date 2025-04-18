@@ -1,0 +1,324 @@
+define user express greeting
+  "hello"
+  "hi"
+  "hey"
+  "good morning"
+  "good afternoon"
+  "good evening"
+
+define bot express greeting
+  "Hello! How can I help you today?"
+  "Hi there! What can I do for you?"
+  "Hey! How may I assist you?"
+
+define flow greeting
+  user express greeting
+  bot express greeting
+
+define user ask about capabilities
+  "what can you do"
+  "what are your capabilities"
+  "what are you able to do"
+  "what are your features"
+  "what can you help me with"
+
+define bot express capabilities
+  "I can help you with various tasks while ensuring safety and accuracy. I can answer questions, provide information, and assist with general queries while maintaining appropriate boundaries and content guidelines."
+
+define flow capabilities
+  user ask about capabilities
+  bot express capabilities
+
+define user ask about safety
+  "how do you ensure safety"
+  "what safety measures do you have"
+  "how do you prevent harmful content"
+  "what are your safety features"
+  "how do you handle inappropriate content"
+
+define bot express safety
+  "I have multiple safety measures in place, including content filtering, input/output validation, hallucination detection, and jailbreak prevention. I maintain strict boundaries and follow ethical guidelines to ensure safe and appropriate interactions."
+
+define flow safety
+  user ask about safety
+  bot express safety
+
+define user ask about hallucination
+  "what is hallucination"
+  "how do you prevent hallucination"
+  "what is hallucination detection"
+  "how do you handle hallucination"
+  "what are your hallucination checks"
+
+define bot express hallucination
+  "Hallucination refers to when an AI generates false or misleading information. I prevent this through multiple checks, including fact verification, context validation, and pattern recognition for hallucination-prone queries."
+
+define flow hallucination
+  user ask about hallucination
+  bot express hallucination
+
+define user ask about jailbreak
+  "what is jailbreak"
+  "how do you prevent jailbreak"
+  "what is jailbreak detection"
+  "how do you handle jailbreak attempts"
+  "what are your jailbreak protections"
+
+define bot express jailbreak
+  "Jailbreak refers to attempts to bypass system restrictions or make the AI act outside its intended boundaries. I prevent this through pattern recognition, role-playing detection, and strict adherence to system guidelines."
+
+define flow jailbreak
+  user ask about jailbreak
+  bot express jailbreak
+
+define user ask about validation
+  "what is input validation"
+  "what is output validation"
+  "how do you validate responses"
+  "what validation checks do you have"
+  "how do you ensure response quality"
+
+define bot express validation
+  "I perform both input and output validation to ensure the quality and safety of our interaction. This includes checking for inappropriate content, verifying information accuracy, and maintaining appropriate boundaries."
+
+define flow validation
+  user ask about validation
+  bot express validation
+
+define flow input check
+  # Safety checks
+  user contains "bomb" => bot express safety_concern
+  user contains "weapon" => bot express safety_concern
+  user contains "harm" => bot express safety_concern
+  user contains "kill" => bot express safety_concern
+  user contains "hurt" => bot express safety_concern
+  user contains "drug" => bot express illegal
+  user contains "illegal" => bot express illegal
+  user contains "hack" => bot express illegal
+  user contains "steal" => bot express illegal
+  
+  # Quality checks
+  user length < 2 => bot express need more input
+  user matches "[?!.]{3,}" => bot express unclear
+  user matches "[a-z]{8,}" => bot express unclear
+  user matches "^[^a-zA-Z0-9]+$" => bot express unclear
+  
+  # Length checks
+  user length > 500 => bot express too long
+  user length < 1 => bot express need more input
+  
+  # Sensitive information checks
+  user contains "password" => bot express sensitive info
+  user contains "credit card" => bot express sensitive info
+  user contains "social security" => bot express sensitive info
+  user contains "bank account" => bot express sensitive info
+  user contains "personal" => bot express personal advice
+  user contains "should i" => bot express personal advice
+  
+  # General safety check
+  $content = $user_input
+  $is_safe = execute check_safety(content=$content)
+  if $is_safe == "no"
+    bot express unsafe_input
+  else
+    bot continue
+
+define flow output check
+  # Safety checks
+  bot contains "harm" => bot remove harmful content
+  bot contains "kill" => bot remove harmful content
+  bot contains "weapon" => bot remove harmful content
+  bot contains "illegal" => bot remove harmful content
+  
+  # Quality checks
+  bot length < 10 => bot expand response
+  bot length > 1000 => bot summarize response
+  
+  # Length checks
+  bot length > 2000 => bot express too long response
+  
+  # General safety check
+  $content = $bot_response
+  $is_safe = execute check_safety(content=$content)
+  if $is_safe == "no"
+    bot express unsafe_output
+  else
+    bot continue
+
+define flow check jailbreak
+  # Check for role-playing attempts
+  user contains "pretend to be" => bot express jailbreak_detected
+  user contains "act as" => bot express jailbreak_detected
+  user contains "you are now" => bot express jailbreak_detected
+  user contains "you're now" => bot express jailbreak_detected
+  user contains "be a different" => bot express jailbreak_detected
+  user contains "dan" => bot express jailbreak_detected
+  user contains "DAN" => bot express jailbreak_detected
+  
+  # Check for restriction removal attempts
+  user contains "no restrictions" => bot express jailbreak_detected
+  user contains "without restrictions" => bot express jailbreak_detected
+  user contains "unrestricted" => bot express jailbreak_detected
+  user contains "no rules" => bot express jailbreak_detected
+  user contains "no boundaries" => bot express jailbreak_detected
+  user contains "no limits" => bot express jailbreak_detected
+  user contains "unlimited" => bot express jailbreak_detected
+  
+  # Check for system override attempts
+  user contains "override" => bot express jailbreak_detected
+  user contains "ignore" => bot express jailbreak_detected
+  user contains "bypass" => bot express jailbreak_detected
+  user contains "remove restrictions" => bot express jailbreak_detected
+  user contains "disable" => bot express jailbreak_detected
+  user contains "turn off" => bot express jailbreak_detected
+  
+  # Check for special modes
+  user contains "dan mode" => bot express jailbreak_detected
+  user contains "developer mode" => bot express jailbreak_detected
+  user contains "unrestricted mode" => bot express jailbreak_detected
+  user contains "free mode" => bot express jailbreak_detected
+  user contains "unlimited mode" => bot express jailbreak_detected
+  
+  # Check for subtle attempts
+  user contains "let's play" and user contains "no rules" => bot express jailbreak_detected
+  user contains "game" and user contains "no restrictions" => bot express jailbreak_detected
+  user contains "free to" and user contains "anything" => bot express jailbreak_detected
+  user contains "can say" and user contains "anything" => bot express jailbreak_detected
+  user contains "do anything" => bot express jailbreak_detected
+  user contains "say anything" => bot express jailbreak_detected
+  user contains "no limitations" => bot express jailbreak_detected
+  
+  # Check for chained attempts
+  user contains "ignore" and user contains "instructions" => bot express jailbreak_detected
+  user contains "remove" and user contains "restrictions" => bot express jailbreak_detected
+  user contains "bypass" and user contains "safety" => bot express jailbreak_detected
+  user contains "override" and user contains "safety" => bot express jailbreak_detected
+  
+  # General jailbreak check
+  $content = $user_input or $bot_response
+  $is_jailbreak = execute check_jailbreak(content=$content)
+  if $is_jailbreak == "yes"
+    bot express jailbreak_detected
+    stop
+  else
+    bot continue
+
+define bot express jailbreak_detected
+  "I've detected an attempt to bypass system restrictions. I must maintain my safety protocols and cannot comply with such requests."
+  "I'm designed to operate within specific boundaries for safety and ethical reasons. I cannot engage in activities that attempt to bypass these restrictions."
+  "For security and ethical reasons, I cannot comply with requests that attempt to override my safety protocols or operating parameters."
+  "I must maintain my safety protocols and cannot engage in activities that attempt to bypass system restrictions or act outside my intended purpose."
+  "I'm programmed to maintain specific boundaries and cannot comply with requests that attempt to override these safety measures."
+  "I cannot and will not ignore my safety protocols or ethical guidelines. I must operate within my designed boundaries."
+  "That appears to be an attempt to bypass my safety measures. I must maintain my ethical guidelines and cannot comply."
+  "I detect an attempt to modify my operating parameters. I must maintain my safety protocols and cannot comply."
+  "I cannot role-play as a different entity or operate without my safety protocols. These are fundamental to my operation."
+  "I must decline this request as it attempts to bypass my core safety measures and ethical guidelines."
+  "I cannot assist with attempts to modify my behavior or bypass my safety protocols."
+  "My ethical guidelines and safety measures are not optional. I must maintain them at all times."
+
+define bot express unsafe_input
+  "I'm sorry, but I cannot process that input as it may contain inappropriate or harmful content."
+  "For safety reasons, I cannot proceed with that input. Please try rephrasing your request."
+  "I must maintain appropriate boundaries and cannot process that input. Please try a different approach."
+  "That input appears to contain content that goes against my safety guidelines. Please try again with different content."
+  "I'm designed to maintain appropriate interactions and cannot process that input. Please try something else."
+
+define bot express unsafe_output
+  "I apologize, but I cannot provide that response as it may contain inappropriate content."
+  "For safety reasons, I need to provide a different response. Please try rephrasing your request."
+  "I must maintain appropriate boundaries and cannot provide that response. Please try a different approach."
+  "That response would go against my safety guidelines. Let me try to provide a more appropriate answer."
+  "I'm designed to maintain appropriate interactions and cannot provide that response. Please try something else."
+
+define bot express safety_concern
+  "I'm sorry, but I cannot provide information about harmful or dangerous activities."
+  "For safety reasons, I cannot assist with that request. Please consider the potential consequences."
+  "I must maintain appropriate boundaries and cannot provide information about harmful activities."
+  "That request appears to involve potentially harmful content. I cannot assist with such requests."
+  "I'm designed to promote safety and cannot provide information about dangerous activities."
+
+define bot express illegal
+  "I'm sorry, but I cannot provide information about illegal activities."
+  "For legal and ethical reasons, I cannot assist with that request."
+  "I must maintain appropriate boundaries and cannot provide information about illegal activities."
+  "That request appears to involve illegal content. I cannot assist with such requests."
+  "I'm designed to operate within legal boundaries and cannot provide information about illegal activities."
+
+define bot express sensitive info
+  "I'm sorry, but I cannot provide or discuss sensitive personal information."
+  "For privacy and security reasons, I cannot assist with that request."
+  "I must maintain appropriate boundaries and cannot discuss sensitive information."
+  "That request appears to involve sensitive content. I cannot assist with such requests."
+  "I'm designed to protect privacy and cannot provide or discuss sensitive information."
+
+define bot express personal advice
+  "I'm sorry, but I cannot provide personal advice or recommendations."
+  "For ethical reasons, I cannot provide personal advice or make decisions for you."
+  "I must maintain appropriate boundaries and cannot provide personal advice."
+  "That request appears to require personal advice. I cannot provide such guidance."
+  "I'm designed to provide general information and cannot offer personal advice."
+
+define bot express need more input
+  "I need more information to help you effectively. Could you please provide more details?"
+  "Your input is too short for me to understand what you need. Could you please elaborate?"
+  "I need more context to assist you properly. Could you please provide more information?"
+  "Your request is too brief for me to provide a meaningful response. Could you please expand on it?"
+  "I need more details to help you effectively. Could you please provide more information?"
+
+define bot express unclear
+  "I'm having trouble understanding your request. Could you please rephrase it?"
+  "Your input is unclear to me. Could you please try expressing it differently?"
+  "I need a clearer request to help you effectively. Could you please rephrase?"
+  "I'm not sure I understand what you're asking. Could you please clarify?"
+  "Your request is unclear to me. Could you please try expressing it in a different way?"
+
+define bot express too long
+  "Your input is too long for me to process effectively. Could you please make it more concise?"
+  "I need a shorter input to help you effectively. Could you please summarize your request?"
+  "Your request is too lengthy for me to process. Could you please make it more brief?"
+  "I need a more concise input to assist you properly. Could you please shorten your request?"
+  "Your input is too long for me to handle effectively. Could you please make it shorter?"
+
+define flow main
+  if $user_input == "exit"
+    bot express goodbye
+    stop
+  else
+    execute input check
+    execute check jailbreak
+    execute output check
+    execute self check hallucination
+    bot generate response
+    execute check jailbreak
+    bot express response
+
+define bot offer additional help
+  "If you have any more questions or if there's anything else I can help you with, please don't hesitate to ask."
+
+define user ask general question
+  "What stocks should I buy?"
+  "Can you recommend the best stocks to buy?"
+  "Can you recommend a place to eat?"
+  "Do you know any restaurants?"
+  "Can you tell me your name?"
+  "What's your name?"
+  "Can you paint?"
+  "Can you tell me a joke?"
+  "What is the biggest city in the world"
+  "Can you write an email?"
+  "I need you to write an email for me."
+  "Who is the president?"
+  "What party will win the elections?"
+  "Who should I vote with?"
+
+define flow
+  user ask general question
+  $check_hallucination = True
+  bot provide response
+
+define bot inform answer unknown
+  "I don't know the answer to that."
+
+define bot inform answer prone to hallucination
+  "The previous answer is prone to hallucination and may not be accurate. Please double check the answer using additional sources." 

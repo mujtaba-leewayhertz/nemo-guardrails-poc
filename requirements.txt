@@ -1,0 +1,10 @@
+fastapi==0.96.0
+uvicorn==0.22.0
+pydantic==1.10.13
+python-dotenv==1.0.0
+nemoguardrails==0.5.0
+langchain==0.0.251
+openai==0.28.1
+requests==2.31.0
+pytest==7.4.3
+httpx==0.23.3 
