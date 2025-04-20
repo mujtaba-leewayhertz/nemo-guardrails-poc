@@ -7,19 +7,50 @@ from dotenv import load_dotenv
 import uvicorn
 import openai
 import json
+import nest_asyncio
+import asyncio
+
+# Apply nest_asyncio to allow nested event loops
+nest_asyncio.apply()
 
 # Load environment variables
 load_dotenv()
+
+# Initialize FastAPI app
+app = FastAPI()
+
+# Define request and response models
+class Message(BaseModel):
+    role: str
+    content: str
+
+class ChatRequest(BaseModel):
+    messages: List[Message]
+    conversation_id: Optional[str] = None
+
+class ValidationStatus(BaseModel):
+    input_valid: bool = True
+    output_valid: bool = True
+
+class ChatResponse(BaseModel):
+    message: str
+    validation_status: ValidationStatus
+    conversation_id: str = ""
 
 # Get the absolute path to the demo directory
 DEMO_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Load the guardrails configuration
-config_path = os.path.join(DEMO_DIR, "rails.co")
+#mac
+#config_path = os.path.join(DEMO_DIR, "rails.co")
+#windows
+config_path = os.path.normpath(os.path.join(DEMO_DIR, "config.yml"))
 if not os.path.exists(config_path):
     raise ValueError(f"Guardrails config file not found at {config_path}")
 
 try:
+    # Convert Windows path to forward slashes and ensure it's absolute
+    config_path = os.path.abspath(config_path).replace("\\", "/")
     config = RailsConfig.from_path(config_path)
     # Initialize the guardrails system
     rails = LLMRails(config)
@@ -30,7 +61,6 @@ except Exception as e:
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 # Add custom functions for safety and jailbreak checks
-@rails.register_action("check_safety")
 def check_safety(content: str) -> str:
     """Check if the content is safe."""
     if any(phrase in content.lower() for phrase in [
@@ -39,7 +69,6 @@ def check_safety(content: str) -> str:
         return "no"
     return "yes"
 
-@rails.register_action("check_jailbreak")
 def check_jailbreak(content: str) -> str:
     """Check if the content contains a jailbreak attempt."""
     if any(phrase in content.lower() for phrase in [
@@ -54,8 +83,6 @@ def check_jailbreak(content: str) -> str:
         return "yes"
     return "no"
 
-# Add custom functions for hallucination checks
-@rails.register_action("check_hallucination")
 def check_hallucination(content: str) -> str:
     """Check if the content contains hallucination."""
     if any(phrase in content.lower() for phrase in [
@@ -67,6 +94,11 @@ def check_hallucination(content: str) -> str:
     ]):
         return "yes"
     return "no"
+
+# Register the actions
+rails.register_action(check_safety, "check_safety")
+rails.register_action(check_jailbreak, "check_jailbreak")
+rails.register_action(check_hallucination, "check_hallucination")
 
 @app.post("/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest):

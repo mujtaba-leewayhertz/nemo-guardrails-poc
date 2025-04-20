@@ -8,6 +8,9 @@ This is a FastAPI-based demo application that implements NeMo Guardrails for cha
 ```bash
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
+windows - .\venv\Scripts\Activate.ps1
 ```
 
 2. Install dependencies:
